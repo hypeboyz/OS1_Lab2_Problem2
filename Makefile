@@ -1,12 +1,14 @@
 CC = gcc
 obj-m := fifo.o
+CFLAGS_fifo.o := -DDEBUG
 PWD := $(shell pwd)
+TESTCFLAGS = -O2
 
 default: 
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 test: test.c
-	$(CC) -o $@ $@.c
+	$(CC) -o $@ $(TESTCFLAGS) $@.c
 
 clean: 
 	rm -f test
