@@ -12,8 +12,6 @@
 #define ORDER 1
 #endif
 
-#define DEBUG
-
 struct fifo_dev {
 	wait_queue_head_t f_inq, f_outq;
 	struct semaphore f_sem;
@@ -33,7 +31,7 @@ static inline int is_full(struct fifo_dev *dev)
 	if ((dev->f_wp + 1) == dev->f_end)
 		return (dev->f_rp == dev->f_data);
 	if ((dev->f_wp == dev->f_end) && (dev->f_rp == dev->f_data))
-		return true;
+		return 1;
 	else if ((dev->f_wp == dev->f_end) && (dev->f_rp != dev->f_data))
 		dev->f_wp = dev->f_data;
 	return ((dev->f_wp + 1) == dev->f_rp);

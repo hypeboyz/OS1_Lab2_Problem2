@@ -54,6 +54,7 @@ static ssize_t __do_read(struct fifo_dev *dev, char __user *buf,
 	if (dev->f_wp == dev->f_end)
 		dev->f_wp = dev->f_data;
 
+#ifdef DEBUG
 	if (dev->f_wp > dev->f_end) {
 		printk(KERN_EMERG"Error occured on reading!\n"
 				"dev->f_rp = %lx, dev->f_end = %lx\n",
@@ -61,6 +62,7 @@ static ssize_t __do_read(struct fifo_dev *dev, char __user *buf,
 				(unsigned long)dev->f_end);
 		return -EFAULT;
 	}
+#endif
 
 	return count;
 }
@@ -75,6 +77,10 @@ ssize_t fifo_read(struct file *filp, char __user *buf,
 
 	if (down_interruptible(&dev->f_sem))
 		return -ERESTARTSYS;
+#ifdef DEBUG
+	if (is_empty(dev))
+		pr_debug("The fifo is empty\n");
+#endif
 
 	while (is_empty(dev)) {
 		up(&dev->f_sem);
@@ -113,12 +119,14 @@ static ssize_t __do_write(struct fifo_dev *dev, const char __user *buf,
 	if ((dev->f_wp == dev->f_end) && (dev->f_rp != dev->f_data))
 		dev->f_wp = dev->f_data;
 
+#ifdef DEBUG
 	if (dev->f_wp > dev->f_end) {
 		printk(KERN_EMERG"Error occured on writing!\n"
 				"dev->f_wp = %lx, dev->f_end = %lx\n",
 				(unsigned long)dev->f_wp,
 				(unsigned long)dev->f_end);
 	}
+#endif
 
 	return count;
 }
@@ -134,6 +142,10 @@ ssize_t fifo_write(struct file *filp, const char __user *buf,
 		printk(KERN_EMERG"write cannot get the first lock!\n");
 		return -ERESTARTSYS;
 	}
+#ifdef DEBUG
+	if (is_full(dev))
+		pr_debug("The fifo is full\n");
+#endif
 
 	while (is_full(dev)) {
 		up(&dev->f_sem);
