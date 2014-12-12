@@ -14,7 +14,7 @@ void sig_chd(int signo)
 	term = 1;
 }
 
-int main()
+int main(void)
 {
 	int fd_r, fd_w;
 	char *buf;
@@ -30,19 +30,19 @@ int main()
 		fprintf(stderr, "Error opening fifo1");
 
 	sigact.sa_handler = sig_chd;
-	/* We don't care if the old sigmask will be 
-	 * reset 
+	/* We don't care if the old sigmask will be
+	 * reset
 	 */
 	sigaction(SIGCHLD, &sigact, NULL);
 
 	pid = fork();
 	if (pid < 0)
 		return 1;
-	else if (!pid) { 
+	else if (!pid) {
 		/* child */
 		int i = 0;
-		buf = (char *)malloc(BUFSIZ);
 
+		buf = (char *)malloc(BUFSIZ);
 		for (i = 0; i < 4096; i++) {
 			retval = write(fd_w, TEST_STR, strlen(TEST_STR) + 1);
 			if (retval < 0) {
@@ -63,8 +63,8 @@ int main()
 	} else {
 		/* parent */
 		int i = 0;
-		buf = (char *)malloc(BUFSIZ);
 
+		buf = (char *)malloc(BUFSIZ);
 		for (i = 0; i < 4096; i++) {
 			if (!term) {
 				retval = read(fd_r, buf, BUFSIZ);
@@ -74,7 +74,7 @@ int main()
 				}
 				retval = write(STDOUT_FILENO, buf, BUFSIZ);
 				if (retval < 0) {
-					perror("Cannot print!\n");
+					perror("Cannot print\n");
 					return retval;
 				}
 				bzero(buf, BUFSIZ);
@@ -83,13 +83,13 @@ int main()
 				if (!strlen(buf)) {
 					retval = read(fd_r, buf, BUFSIZ);
 					if (retval < 0) {
-						perror("Cannot read from fifo!\n");
+						perror("Error reading fifo\n");
 						return retval;
 					}
 				}
 				retval = write(STDOUT_FILENO, buf, BUFSIZ);
 				if (retval < 0) {
-					perror("Cannot print!\n");
+					perror("Cannot print\n");
 					return retval;
 				}
 				return 0;
