@@ -15,15 +15,20 @@ void sig_chd(int signo)
 {
 	int retval;
 
-	if (!strlen(buf)) {
+	if (strcmp(buf, "") || strlen(buf)) {
 		retval = read(fd_r, buf, BUFSIZ);
-		if (retval < 0)
+		if (retval < 0) {
+			perror("Error reading!");
 			_exit(1);
+		}
 	}
-	retval = write(STDOUT_FILENO, buf, BUFSIZ);
-	if (retval < 0)
+	if (strlen(buf))
+		retval = write(STDOUT_FILENO, buf, retval);
+	if (retval < 0) {
+		perror("Error printing!");
 		_exit(1);
-	printf("\n");
+	}
+
 	_exit(0);
 }
 
@@ -52,47 +57,40 @@ int main(void)
 	else if (!pid) {
 		/* child */
 		int i = 0;
+		size_t sum = 0;
 
-		buf = (char *)malloc(BUFSIZ);
 		for (i = 0; i < 4096; i++) {
-			retval = write(fd_w, TEST_STR, strlen(TEST_STR) + 1);
+			retval = write(fd_w, TEST_STR, strlen(TEST_STR));
 			if (retval < 0) {
-				perror("Error writing\n");
+				perror("Error writing");
 				return retval;
 			}
-		}
-		memset(buf, (int)'y', BUFSIZ);
-		retval = write(fd_w, buf, BUFSIZ);
-		if (retval < 0) {
-			perror("Error writing\n");
-			return retval;
-		} else if (retval < BUFSIZ) {
-			for (i = 0; i < 3; i++)
-				retval = write(fd_w, buf, BUFSIZ);
+			sum += retval;
 		}
 		exit(0);
 	} else {
 		/* parent */
 		int i = 0;
+		size_t sum = 0;
 
 		buf = (char *)malloc(BUFSIZ);
-		for (i = 0; i < 4096; i++) {
+		while (sum < (strlen(TEST_STR) << 12)) {
 			retval = read(fd_r, buf, BUFSIZ);
 			if (retval < 0) {
-				perror("Error reading\n");
+				perror("Error reading");
 				return retval;
 			}
 			retval = write(STDOUT_FILENO, buf, BUFSIZ);
 			if (retval < 0) {
-				perror("Cannot print\n");
+				perror("Cannot print");
 				return retval;
 			}
+			sum += retval;
 			bzero(buf, BUFSIZ);
 		}
 
 		waitpid(pid, NULL, 0);
 		exit(0);
-
 	}
 
 	close(fd_r);
