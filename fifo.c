@@ -55,11 +55,18 @@ static ssize_t __do_read(struct fifo_dev *dev, char __user *buf,
 		dev->f_wp = dev->f_data;
 
 #ifdef DEBUG
-	if (dev->f_wp > dev->f_end) {
+	if (unlikely(dev->f_rp > dev->f_end)) {
 		printk(KERN_EMERG"Error occured on reading!\n"
 				"dev->f_rp = %lx, dev->f_end = %lx\n",
 				(unsigned long)dev->f_rp,
 				(unsigned long)dev->f_end);
+		return -EFAULT;
+	}
+	if (unlikely(dev->f_rp < dev->f_data)) {
+		printk(KERN_EMERG"Error occured on reading!\n"
+				"dev->f_rp = %lx, dev->f_data = %lx\n",
+				(unsigned long)dev->f_rp,
+				(unsigned long)dev->f_data);
 		return -EFAULT;
 	}
 #endif
@@ -120,11 +127,17 @@ static ssize_t __do_write(struct fifo_dev *dev, const char __user *buf,
 		dev->f_wp = dev->f_data;
 
 #ifdef DEBUG
-	if (dev->f_wp > dev->f_end) {
+	if (unlikely(dev->f_wp > dev->f_end )) {
 		printk(KERN_EMERG"Error occured on writing!\n"
 				"dev->f_wp = %lx, dev->f_end = %lx\n",
 				(unsigned long)dev->f_wp,
 				(unsigned long)dev->f_end);
+	}
+	if (unlikely(dev->f_wp < dev->f_data)) {
+		printk(KERN_EMERG"Error occured on writing!\n"
+				"dev->f_wp = %lx, dev->f_data = %lx\n",
+				(unsigned long)dev->f_wp,
+				(unsigned long)dev->f_data);
 	}
 #endif
 
