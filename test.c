@@ -4,20 +4,31 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define TEST_STR "This is test\n"
 
-int term = 0;
+char *buf;
+int fd_r, fd_w;
 
 void sig_chd(int signo)
 {
-	term = 1;
+	int retval;
+
+	if (!strlen(buf)) {
+		retval = read(fd_r, buf, BUFSIZ);
+		if (retval < 0)
+			_exit(1);
+	}
+	retval = write(STDOUT_FILENO, buf, BUFSIZ);
+	if (retval < 0)
+		_exit(1);
+	printf("\n");
+	_exit(0);
 }
 
 int main(void)
 {
-	int fd_r, fd_w;
-	char *buf;
 	pid_t pid;
 	struct sigaction sigact;
 	int retval;
@@ -66,34 +77,17 @@ int main(void)
 
 		buf = (char *)malloc(BUFSIZ);
 		for (i = 0; i < 4096; i++) {
-			if (!term) {
-				retval = read(fd_r, buf, BUFSIZ);
-				if (retval < 0) {
-					perror("Error reading\n");
-					return retval;
-				}
-				retval = write(STDOUT_FILENO, buf, BUFSIZ);
-				if (retval < 0) {
-					perror("Cannot print\n");
-					return retval;
-				}
-				bzero(buf, BUFSIZ);
-				sleep(rand() % 10);
-			} else {
-				if (!strlen(buf)) {
-					retval = read(fd_r, buf, BUFSIZ);
-					if (retval < 0) {
-						perror("Error reading fifo\n");
-						return retval;
-					}
-				}
-				retval = write(STDOUT_FILENO, buf, BUFSIZ);
-				if (retval < 0) {
-					perror("Cannot print\n");
-					return retval;
-				}
-				return 0;
+			retval = read(fd_r, buf, BUFSIZ);
+			if (retval < 0) {
+				perror("Error reading\n");
+				return retval;
 			}
+			retval = write(STDOUT_FILENO, buf, BUFSIZ);
+			if (retval < 0) {
+				perror("Cannot print\n");
+				return retval;
+			}
+			bzero(buf, BUFSIZ);
 		}
 
 		waitpid(pid, NULL, 0);
