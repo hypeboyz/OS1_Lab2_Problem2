@@ -4,7 +4,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/semaphore.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include "fifo.h"
@@ -233,11 +233,11 @@ static void __exit fifo_exit(void)
 {
 	int i = 0;
 
-	unregister_chrdev_region(fifo_devno, fifo_nr_devs);
 	for (i = 0; i < fifo_nr_devs; i++) {
 		free_pages((unsigned long)(fifo_dev[i].f_data), ORDER);
 		cdev_del(&fifo_dev[i].f_cdev);
 	}
+	unregister_chrdev_region(fifo_devno, fifo_nr_devs);
 }
 
 module_init(fifo_init);

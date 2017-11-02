@@ -4,13 +4,13 @@ CFLAGS_fifo.o := -DDEBUG
 PWD := $(shell pwd)
 TESTCFLAGS = -O2
 
-default: 
+default:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 test: test.c
-	$(CC) -o $@ $(TESTCFLAGS) $@.c
+	clang -o $@ $(TESTCFLAGS) $@.c
 
-clean: 
+clean:
 	rm -f test
 	rm -rf ./.tmp_versions
 	rm -f $(wildcard ./*~)

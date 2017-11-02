@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 #define TEST_STR "This is test\n"
 
@@ -40,10 +41,15 @@ int main(void)
 
 	fd_w = open("/dev/fifo0", O_WRONLY);
 	fd_r = open("/dev/fifo1", O_RDONLY);
-	if (fd_w < 0)
-		fprintf(stderr, "Error opening fifo0");
-	if (fd_r < 0)
-		fprintf(stderr, "Error opening fifo1");
+	if (fd_w < 0) {
+		fprintf(stderr, "Error opening fifo0\n");
+		return EXIT_FAILURE;
+	}
+	if (fd_r < 0) {
+		fprintf(stderr, "Error opening fifo1\n");
+		return EXIT_FAILURE;
+	}
+
 
 	sigact.sa_handler = sig_chd;
 	/* We don't care if the old sigmask will be
@@ -52,9 +58,9 @@ int main(void)
 	sigaction(SIGCHLD, &sigact, NULL);
 
 	pid = fork();
-	if (pid < 0)
+	if (pid < 0) {
 		return 1;
-	else if (!pid) {
+	} else if (!pid) {
 		/* child */
 		int i = 0;
 		size_t sum = 0;
@@ -67,7 +73,6 @@ int main(void)
 			}
 			sum += retval;
 		}
-		exit(0);
 	} else {
 		/* parent */
 		int i = 0;
@@ -90,7 +95,6 @@ int main(void)
 		}
 
 		waitpid(pid, NULL, 0);
-		exit(0);
 	}
 
 	close(fd_r);
