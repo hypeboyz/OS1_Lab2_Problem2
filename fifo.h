@@ -6,9 +6,8 @@
 #define IS_ODD(x) (x & 1)
 #define IS_EVEN(x) !(x & 1)
 
-#ifndef NR_DEVS
-#define NR_DEVS 4
-#endif
+#define NR_DEVS 2
+#define MAX_NR_DEVS 256 >> 1
 
 #ifndef ORDER
 #define ORDER 1
@@ -26,17 +25,11 @@ struct fifo_dev {
 
 static inline int is_empty(struct fifo_dev *dev)
 {
-	/* return (dev->f_rp == dev->f_wp); */
 	return !dev->f_size;
 }
 
 static inline int is_full(struct fifo_dev *dev)
 {
-	/* if (dev->f_wp > dev->f_rp) { */
-	/* 	return (dev->f_wp == dev->f_end) && (dev->f_rp == dev->f_data); */
-	/* } else { */
-	/* 	return ((dev->f_wp + 1) == dev->f_rp); */
-	/* } */
 	return (PAGE_SIZE << ORDER) == dev->f_size;
 }
 
@@ -44,11 +37,5 @@ static inline size_t free_space(struct fifo_dev *dev)
 {
 	return ((PAGE_SIZE << ORDER) - dev->f_size);
 }
-
-static struct fifo_dev fifo_dev[NR_DEVS >> 1];
-static int fifo_nr_devs = NR_DEVS >> 1;
-static dev_t fifo_devno[NR_DEVS >> 1];
-static dev_t fifo_major;
-static dev_t fifo_minor;	/* Minor number of the first device */
 
 #endif

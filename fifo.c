@@ -9,6 +9,17 @@
 
 MODULE_LICENSE("GPL");
 
+/*
+ * Due to unknown reason I have to use static data here
+ * If they are allocated dynamically the cleanup func does not work
+ */
+static size_t fifo_nr_devs = NR_DEVS;
+module_param(fifo_nr_devs, ulong, S_IRUGO);
+static struct fifo_dev fifo_dev[MAX_NR_DEVS];
+static dev_t fifo_devno[MAX_NR_DEVS];
+static dev_t fifo_major;
+static dev_t fifo_minor;	/* Minor number of the first device */
+
 /* FIXME: I'm not pretty sure about the error code return
  * if we write on the read port or vice versa.
  */
@@ -163,7 +174,7 @@ static ssize_t fifo_write(struct file *filp, const char __user *buf,
 		return -ERESTARTSYS;
 	}
 #ifdef DEBUG
-	if (is_full(dev)){
+	if (is_full(dev)) {
 		pr_debug("The fifo is full\n"
 			 "dev->f_rp = 0x%lx, dev->f_wp = 0x%lx\n"
 			 "dev->f_data = 0x%lx, dev->f_end = 0x%lx\n"
@@ -233,6 +244,12 @@ static int __init fifo_init(void)
 	int err = 0;
 	int i = 0;
 
+	if (fifo_nr_devs > MAX_NR_DEVS) {
+		pr_err("Too many devices\n");
+		/* TODO: Add an error number */
+		return -1;
+	}
+
 	err = alloc_chrdev_region(fifo_devno, 0, fifo_nr_devs, "fifo");
 	if (err < 0)
 		return err;
@@ -252,9 +269,9 @@ static void __exit fifo_exit(void)
 	int i = 0;
 
 	for (i = 0; i < fifo_nr_devs; i++) {
-		kfree(fifo_dev[i].f_data);
 		unregister_chrdev_region(fifo_devno[i], fifo_nr_devs);
 		cdev_del(&fifo_dev[i].f_cdev);
+		kfree(fifo_dev[i].f_data);
 	}
 }
 

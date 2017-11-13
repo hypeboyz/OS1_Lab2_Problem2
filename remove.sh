@@ -1,8 +1,7 @@
 #!/bin/sh
 module="fifo"
-device="fifo"
+device=${module}
 
-rmmod ${module}
+rmmod -f ${module}
 
-rm /dev/${device}[0-3]
-
+rm /dev/${device}*

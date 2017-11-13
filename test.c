@@ -8,7 +8,7 @@
 #include <signal.h>
 #include <sys/syscall.h>
 
-#define NR_DEVS 4
+#define MAX_NR_DEVS 256 >> 1
 
 const char *test_str = "This is test\n";
 
@@ -21,12 +21,14 @@ static size_t thread_num;
 static pthread_t tid_list[BUFSIZ];
 static size_t workload;
 
+static size_t dev_num = 1;
+
 #define DEFAULT_THREAD_NUM 2
 #define DEFAULT_WORKLOAD 4096
 
 void *reader_worker_func(void *args)
 {
-	int fd_r = (int )args;
+	int fd_r = (int)args;
 	sigset_t set;
 	size_t sum = 0;
 	long retval;
@@ -47,7 +49,6 @@ void *reader_worker_func(void *args)
 	pthread_mutex_unlock(&count_lock);
 	/* End of the barrier */
 
-	/* printf("thread %ld starts reading\n", syscall(SYS_gettid)); */
 	buf = (char *)malloc(BUFSIZ);
 	for (i = 0; i < workload; i++) {
 		retval = read(fd_r, buf, strlen(test_str));
@@ -93,7 +94,6 @@ void *wrtier_worker_func(void *args)
 	pthread_mutex_unlock(&count_lock);
 	/* End of the barrier */
 
-	/* printf("thread %ld starts writing\n", syscall(SYS_gettid)); */
 	for (i = 0; i < workload; i++) {
 		do {
 			retval = write(fd_w, test_str, strlen(test_str));
@@ -110,7 +110,7 @@ void *wrtier_worker_func(void *args)
 
 int main(int argc, char **argv)
 {
-	int fds[NR_DEVS];
+	long fds[MAX_NR_DEVS];
 	size_t i;
 	char c;
 	void *(*worker_ptr)(void *);
@@ -119,8 +119,13 @@ int main(int argc, char **argv)
 	thread_num = DEFAULT_THREAD_NUM;
 	workload = DEFAULT_WORKLOAD;
 
-	while ((c = (char)getopt(argc, argv, "t::w::")) != -1) {
+	while ((c = (char)getopt(argc, argv, "t::w::d::")) != -1) {
 		switch(c) {
+		case 'd':
+			dev_num = atoll(argv[optind]);
+			if (dev_num > MAX_NR_DEVS) {
+				dev_num = 1;
+			}
 		case 't':
 			thread_num = atoll(argv[optind]);
 			if (thread_num <= 0) {
@@ -139,7 +144,7 @@ int main(int argc, char **argv)
 	}
 
 	path = (char *)malloc(BUFSIZ);
-	for (i = 0; i < NR_DEVS; i++) {
+	for (i = 0; i < (dev_num << 1); i++) {
 		sprintf(path, "/dev/fifo%zu", i);
 		if (i & 1) {
 			fds[i] = open(path, O_RDONLY);
@@ -155,7 +160,6 @@ int main(int argc, char **argv)
 		}
 	}
 	free(path);
-
 
 	thread_count = thread_num;
 	if (pthread_mutex_init(&count_lock, NULL) < 0) {
@@ -178,7 +182,7 @@ int main(int argc, char **argv)
 		if (pthread_create(&tid_list[i],
 				   NULL,
 				   worker_ptr,
-				   (long *)(long)fds[i % NR_DEVS]) < 0) {
+				   (long *)(long)fds[i % (dev_num << 1)]) < 0) {
 			perror("Failed to create thread");
 			free(tid_list);
 			return errno;
