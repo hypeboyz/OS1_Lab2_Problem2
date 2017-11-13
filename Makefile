@@ -2,13 +2,13 @@ CC = gcc
 obj-m := fifo.o
 CFLAGS_fifo.o := -DDEBUG
 PWD := $(shell pwd)
-TESTCFLAGS = -O2
+TESTCFLAGS = -O2 -Wall -Wextra
 
 default:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 test: test.c
-	clang -o $@ $(TESTCFLAGS) $@.c
+	clang -o $@ $(TESTCFLAGS) $@.c -lpthread
 
 clean:
 	rm -f test
